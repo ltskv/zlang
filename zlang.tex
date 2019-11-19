@@ -1,0 +1,119 @@
+\documentclass{article}
+\input{defs}
+
+\errlang{unknown-identifier}
+\newcommand{\evalz}{\mathit{eval_{\mathbf{Z}}}}
+\newcommand{\pevalz}{\mathit{PE_{\mathbf{Z}}}}
+\newcommand{\Resid}{\oblset{Residual}}
+\newcommand{\ResidFrame}{\oblset{ResidualFrame}}
+\newcommand{\IVars}{\oblset{IVars}}
+\newcommand{\Input}{\mathit{input}}
+
+\title{Z-Language}
+\author{Christian, Pavel, Pauline}
+
+\begin{document}
+
+\maketitle
+
+%  \centering
+\noindent\textbf{Program Static Syntax}\\ \\
+\begin{math}
+  \begin{array}{rcl}
+    \multicolumn{3}{l}{
+      t \in \Term,\quad
+      n \in \Z,\quad
+      x \in \Var, \quad
+    } \\
+    t & ::= & n | x | \<if> t \<then> t \<else> t | t ++ t\\
+  \end{array}
+\end{math}
+\\
+
+\noindent\textbf{Program Runtime Syntax}
+%
+\begin{align*}
+  &\Gbox{nr \in \Resid \subseteq \Term} \\
+  &F \in \Frame,\quad \Gbox{R \in \ResidFrame},\quad o \in \Obs \\
+  &\Gbox{i \in \IVars = \Var \rightharpoonup \Z}
+\end{align*}
+
+\begin{displaymath}
+  \begin{array}{rcl}
+    R & ::= & nr + [] | \<if> nr \<then> nr \<else> [] \\
+    nr & ::= & n | x | R[nr] \\
+    F & ::= & [] | \Gbox{R} | \<if> [] \<then> t \<else> t |
+    \Gbox{\<if> nr \<then> [] \<else> t} | [] + t \\
+    o & ::= & n | \<unknown-identifier>
+  \end{array}
+\end{displaymath}
+
+\vspace{0.5cm}
+
+$\boxed{{-->} \subseteq \Term \times \Term}$
+\quad\textbf{Single-step Reduction}\\
+\begin{mathpar}
+  \inference[(splus)]{}{n_1 ++ n_2 --> n_1 + n_2} \and
+  \inference[(sif-t)]{n \neq 0}{\<if> n \<then> t_2 \<else> t_3 --> t_2} \and
+  \inference[(sif-f)]{}{\<if> 0 \<then> t_2 \<else> t_3 --> t_3} \and
+  \inference[(sframe)]{p --> p'}{F[p] --> F[p']}
+\end{mathpar}
+
+\vspace{0.5cm}
+
+\boxed{\Input : \Term \times \IVars -> \Term} \\
+\begin{displaymath}
+\begin{array}{l}
+    \Input(n, i) = n \\
+    \Input(x, i) = n,\, \exists n \in \Z.\, i(x) = n \\
+    \Input(x, i) = x,\, \nexists n \in \Z.\, i(x) = n \\
+    \Input(\<if> t_1 \<then> t_2 \<else> t_3, i) =
+    \<if> \Input(t_1, i) \<then> \Input(t_2, i) \<else> \Input(t_3, i) \\
+    \Input(t_1 ++ t_2, i) = \Input(t_1, i) ++ \Input(t_2, i) \\
+\end{array}
+\end{displaymath}
+
+\boxed{\pevalz : \Term \times \IVars -> \Resid} \\
+%
+\begin{displaymath}
+\begin{array}{l}
+\pevalz(t, i) = nr  \;\text{if}\; input(t, i) -->* nr \\
+\end{array}
+\end{displaymath}
+
+\boxed{\evalz : \Term \times \IVars  -> \Obs} \\
+%
+\begin{displaymath}
+\begin{array}{l}
+\evalz(t, i) = \<unknown-identifier>  \;\text{if}\; \Vars(\Input(t, i)) \neq \emptyset \\
+\evalz(t, i) = n  \;\text{if}\; input(t, i) -->* n \\
+\end{array}
+\end{displaymath}
+
+\newpage
+
+Let: $t = \<if> \x ++ \y \<then> \x ++ 3 \<else> \x ++ 5$
+
+\vspace{0.5cm}
+
+Calculate $\evalz(t, i)$ with $i = \set{\braket{\x, 3}, \braket{\y, 4}}$:
+\begin{gather*}
+  \Input(t, i) = \<if> 3 ++ 4 \<then> 3 ++ 3 \<else> 3 ++ 5 \\
+  \<if> 3 ++ 4 \<then> 3 ++ 3 \<else> 3 ++ 5 -->
+  \<if> 7 \<then> 3 ++ 3 \<else> 3 ++ 5 --> 3 ++ 3 --> 6 \\
+  \implies \evalz(t, i) = 6
+\end{gather*}
+
+
+Now, calculate $\pevalz(t, i')$ with $i = \set{\braket{\x, 3}}$:
+\begin{gather*}
+  \Input(t, i') = \<if> 3 ++ y \<then> 3 ++ 3 \<else> 3 ++ 5 \\
+  \<if> \underbrace{3 ++ y}_{nr} \<then> 3 ++ 3 \<else> 3 ++ 5 -->
+  \<if> \underbrace{3 ++ y}_{nr} \<then>
+  \underbrace{6}_{nr} \<else> 3 ++ 5 -->
+  \<if> \underbrace{3 ++ y}_{nr} \<then>
+  \underbrace{6}_{nr} \<else> \underbrace{8}_{nr} \\
+  \implies \pevalz(t, i') = \<if> 3 ++ y \<then> 6 \<else> 8
+\end{gather*}
+
+\end{document}

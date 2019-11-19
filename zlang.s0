@@ -1,0 +1,158 @@
+(define z-int-code (desugar '(
+
+(define (z-eval term inames ivals)
+  (if
+    (call is-z-term? term)
+    (call z-interp (call z-subst term inames ivals))
+    (op error 'z-eval '"Not a valid Z term ~s" term)))
+
+(define (is-z-term? term)
+  (if
+    (op atom? term)
+    #t
+    (slet
+      (toplevel (tag term))
+      (if
+        (op equal? toplevel '++)
+        (call is-++? term)
+      (if
+        (op equal? toplevel 'i-t-e)
+        (call is-ite? term)
+      #f)))))
+
+(define (is-++? t)
+  (if
+    (op null? (tl t))
+    #f
+    (slet
+      (t_1 (e1 t))
+      (if
+        (op null? (tl (tl t)))
+        #f
+        (slet
+          (t_2 (e2 t))
+          (if
+            (op null? (tl (tl (tl t))))
+            (if
+              (call is-z-term? t_1)
+              (call is-z-term? t_2)
+              #f)
+            #f))))))
+
+(define (is-ite? t)
+  (if
+    (op null? (tl t))
+    #f
+    (slet
+      (t_1 (e1 t))
+      (if
+        (op null? (tl (tl t)))
+        #f
+        (slet
+          (t_2 (e2 t))
+          (if
+            (op null? (tl (tl (tl t))))
+            #f
+            (slet
+              (t_3 (e3 t))
+              (if
+                (op null? (tl (tl (tl (tl t)))))
+                (if
+                  (call is-z-term? t_1)
+                  (if
+                    (call is-z-term? t_2)
+                    (call is-z-term? t_3)
+                    #f)
+                  #f)
+                #f))))))))
+
+(define (z-subst t inames ivals)
+  (if
+    (op atom? t)
+    (if
+      (op number? t)
+      t
+      (call z-lookup t inames ivals))
+    (slet
+      (toplevel (tag t))
+      (if
+        (op equal? toplevel '++)
+        (list
+          '++
+          (call z-subst (e1 t) inames ivals)
+          (call z-subst (e2 t) inames ivals))
+      (if
+        (op equal? toplevel 'i-t-e)
+        (list
+          'i-t-e
+          (call z-subst (e1 t) inames ivals)
+          (call z-subst (e2 t) inames ivals)
+          (call z-subst (e3 t) inames ivals))
+      (op error 'z-step '"Should not be reachable ~s" toplevel))))))
+
+(define (z-lookup x inames ivals)
+  (if
+    (op null? inames)
+    (op error 'z-lookup '"No value found for" x)
+    (if
+      (op equal? x (hd inames))
+      (if
+        (op number? (hd ivals))
+        (hd ivals)
+        (op error 'z-lookup '"Not a valid value for" (list x (hd ivals))))
+      (call z-lookup x (tl inames) (tl ivals)))))
+
+(define (z-interp t)
+  (if
+    (op number? t)
+    t
+    (call z-interp (call z-step t))))
+
+(define (z-step t)
+  (if
+    (op atom? t)
+    (if
+      (op number? t)
+      t
+      (op error 'z-step '"Should not happen" t))
+    (slet
+      (toplevel (tag t))
+      (if
+        (op equal? toplevel '++)
+        (call handle++ t)
+      (if
+        (op equal? toplevel 'i-t-e)
+        (call handle-ite t)
+      (op error 'z-step '"Should not happen" toplevel))))))
+
+(define (handle++ t)
+  (slet
+    (t_1 (e1 t))
+  (slet
+    (t_2 (e2 t))
+    (if
+      (op number? t_1)
+      (if
+        (op number? t_2)
+        (op + t_1 t_2)
+        (list '++ t_1 (call z-step t_2)))
+      (list '++ (call z-step t_1) t_2))
+    (op error 'handle++ '"Should not happen" t))))
+
+(define (handle-ite t)
+  (slet
+    (t_1 (e1 t))
+  (slet
+    (t_2 (e2 t))
+  (slet
+    (t_3 (e3 t))
+    (if
+      (op null? (tl (tl (tl (tl t)))))
+      (if
+        (op number? t_1)
+        (if (op equal? t_1 '0) t_3 t_2)
+        (list 'i-t-e (call z-step t_1) t_2 t_3))
+      (op error '"Should not happen" t))))))
+)))
+
+(make 'z-int z-int-code)

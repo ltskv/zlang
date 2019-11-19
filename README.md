@@ -102,8 +102,8 @@ obviously, is in [zlang.s0](./zlang.s0).
 
 1. Download [Gambit Scheme](http://gambitscheme.org/wiki/index.php/Main_Page).
 You can use `brew install gambit-scheme` on the Mac, but it doesn't link the
-interpreter into `/usr/local/bin`, so you will have to locate the executable,
-which is called `gsi`. 
+needed binary into `/usr/local/bin`, so you will have to locate the executable,
+which is called `gsi`, yourself (try `/usr/local/Cellar/gambit-scheme/...`). 
 
 2. Download the source code for Scheme0 and the Scheme0 Specializer from the
 [book's webpage](https://www.itu.dk/people/sestoft/pebook/).
